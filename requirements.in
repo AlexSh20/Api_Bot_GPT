@@ -1,0 +1,6 @@
+Django>=4.2.0
+djangorestframework
+
+# API
+openai>=1.0.0  # GPT API
+python-telegram-bot>=20.0  # Telegram API
