@@ -1,0 +1,163 @@
+{
+  "welcome_scenario": {
+    "name": "Приветственный сценарий",
+    "description": "Простой сценарий приветствия и знакомства с пользователем",
+    "steps": [
+      {
+        "name": "Приветствие",
+        "step_type": "gpt_request",
+        "order": 1,
+        "data": {
+          "prompt": "Поприветствуй пользователя {user_name} дружелюбно и спроси как дела",
+          "transitions": [
+            {
+              "condition": "user_responded",
+              "next_step_order": 2
+            }
+          ]
+        }
+      },
+      {
+        "name": "Запрос имени",
+        "step_type": "input",
+        "order": 2,
+        "data": {
+          "text": "Как тебя зовут?",
+          "save_as": "user_real_name",
+          "response": "Приятно познакомиться, {user_real_name}!",
+          "transitions": [
+            {
+              "condition": "user_responded",
+              "next_step_order": 3
+            }
+          ]
+        }
+      },
+      {
+        "name": "Персональное общение",
+        "step_type": "gpt_request",
+        "order": 3,
+        "data": {
+          "prompt": "Теперь ты знаешь, что пользователя зовут {user_real_name}. Задай ему интересный вопрос о его увлечениях или работе",
+          "transitions": [
+            {
+              "condition": "user_responded",
+              "next_step_order": 4
+            }
+          ]
+        }
+      },
+      {
+        "name": "Завершение",
+        "step_type": "end",
+        "order": 4,
+        "data": {
+          "message": "Спасибо за общение, {user_real_name}! Было приятно познакомиться!"
+        }
+      }
+    ]
+  },
+  "survey_scenario": {
+    "name": "Опрос пользователя",
+    "description": "Сценарий для сбора обратной связи от пользователя",
+    "steps": [
+      {
+        "name": "Начало опроса",
+        "step_type": "message",
+        "order": 1,
+        "data": {
+          "text": "Привет! Мы хотели бы узнать ваше мнение. Готовы ответить на несколько вопросов?",
+          "transitions": [
+            {
+              "condition": "keyword_match",
+              "keywords": [
+                "да",
+                "готов",
+                "конечно",
+                "ok"
+              ],
+              "next_step_order": 2
+            },
+            {
+              "condition": "keyword_match",
+              "keywords": [
+                "нет",
+                "не готов",
+                "позже"
+              ],
+              "next_step_order": 5
+            }
+          ]
+        }
+      },
+      {
+        "name": "Вопрос 1",
+        "step_type": "input",
+        "order": 2,
+        "data": {
+          "text": "Как бы вы оценили наш сервис по шкале от 1 до 10?",
+          "save_as": "rating",
+          "response": "Спасибо за оценку: {rating}",
+          "transitions": [
+            {
+              "condition": "user_responded",
+              "next_step_order": 3
+            }
+          ]
+        }
+      },
+      {
+        "name": "Вопрос 2",
+        "step_type": "input",
+        "order": 3,
+        "data": {
+          "text": "Что бы вы хотели улучшить в нашем сервисе?",
+          "save_as": "improvement",
+          "response": "Ваше предложение записано: {improvement}",
+          "transitions": [
+            {
+              "condition": "user_responded",
+              "next_step_order": 4
+            }
+          ]
+        }
+      },
+      {
+        "name": "Благодарность",
+        "step_type": "gpt_request",
+        "order": 4,
+        "data": {
+          "prompt": "Поблагодари пользователя за участие в опросе. Он поставил оценку {rating} и предложил улучшение: {improvement}",
+          "transitions": [
+            {
+              "condition": "always",
+              "next_step_order": 6
+            }
+          ]
+        }
+      },
+      {
+        "name": "Отказ от опроса",
+        "step_type": "message",
+        "order": 5,
+        "data": {
+          "text": "Понимаем! Если захотите поучаствовать в опросе позже, просто напишите нам.",
+          "transitions": [
+            {
+              "condition": "always",
+              "next_step_order": 6
+            }
+          ]
+        }
+      },
+      {
+        "name": "Завершение",
+        "step_type": "end",
+        "order": 6,
+        "data": {
+          "message": "До свидания! Хорошего дня!"
+        }
+      }
+    ]
+  }
+}

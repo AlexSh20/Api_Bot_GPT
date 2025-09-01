@@ -7,5 +7,5 @@ router.register(r"scenarios", ScenarioViewSet)
 router.register(r"steps", StepViewSet)
 
 urlpatterns = [
-    path("api/", include(router.urls)),
+    path("", include(router.urls)),
 ]

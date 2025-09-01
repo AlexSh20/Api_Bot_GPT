@@ -1,0 +1,158 @@
+/* Стили для админки сценариев */
+
+/* Улучшение отображения JSON данных */
+.field-data_preview pre {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Стили для inline форм */
+.inline-group .tabular tr.has_original td {
+    padding: 8px 10px;
+}
+
+.inline-group .tabular .field-data_preview {
+    max-width: 200px;
+    font-size: 11px;
+}
+
+.inline-group .tabular .field-edit_link {
+    white-space: nowrap;
+}
+
+/* Улучшение отображения списка сценариев */
+.admin-object-tools {
+    margin-bottom: 20px;
+}
+
+.field-steps_count a {
+    color: #417690;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.field-steps_count a:hover {
+    text-decoration: underline;
+}
+
+/* Стили для колонки действий */
+.field-actions_column {
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.field-actions_column span {
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* Улучшение форм редактирования */
+.form-row .field-data textarea {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Стили для fieldsets */
+.module h2 {
+    background: #417690;
+    color: white;
+    padding: 10px 15px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.module .description {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-left: 4px solid #417690;
+    margin-bottom: 15px;
+    font-style: italic;
+    color: #666;
+}
+
+/* Стили для кнопок действий */
+.button.default,
+input[type=submit].default {
+    background: #417690;
+    border-color: #417690;
+}
+
+.button.default:hover,
+input[type=submit].default:hover {
+    background: #205067;
+    border-color: #205067;
+}
+
+/* Улучшение отображения типов шагов */
+.field-step_type select {
+    min-width: 150px;
+}
+
+/* Стили для предупреждений */
+.messagelist .warning {
+    background: #ffeaa7;
+    border-color: #fdcb6e;
+}
+
+.messagelist .success {
+    background: #00b894;
+    border-color: #00a085;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .field-data_preview pre {
+        font-size: 10px;
+        max-height: 150px;
+    }
+
+    .inline-group .tabular .field-data_preview {
+        max-width: 150px;
+    }
+
+    .field-actions_column {
+        font-size: 10px;
+    }
+}
+
+/* Стили для выделения активных/неактивных элементов */
+.field-is_active input[type="checkbox"]:checked+label::before {
+    background-color: #00b894;
+    border-color: #00a085;
+}
+
+/* Улучшение читаемости длинных списков */
+.results tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.results tbody tr:hover {
+    background-color: #e3f2fd;
+}
+
+/* Стили для помощи и подсказок */
+.help {
+    font-size: 11px;
+    color: #666;
+    margin-top: 5px;
+    line-height: 1.3;
+}
+
+/* Улучшение отображения JSON в формах */
+.vLargeTextField {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+}

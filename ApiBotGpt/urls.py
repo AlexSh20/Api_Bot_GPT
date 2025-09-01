@@ -17,9 +17,43 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
+
+@api_view(["GET"])
+def api_root(request, format=None):
+    """
+    Telegram GPT Bots API
+
+    Добро пожаловать в API для управления Telegram ботами с GPT интеграцией!
+
+    Основные возможности:
+    - Создание и управление Telegram ботами
+    - Интеграция с OpenAI GPT API
+    - Управление пользователями Telegram
+    - Создание сценариев для ботов
+    """
+    return Response(
+        {
+            "message": "Telegram GPT Bots API",
+            "version": "1.0.0",
+            "endpoints": {
+                "admin": reverse("admin:index", request=request, format=format),
+                "bots": request.build_absolute_uri("/api/bots/"),
+                "telegram_users": request.build_absolute_uri("/api/telegram-users/"),
+                "conversations": request.build_absolute_uri("/api/conversations/"),
+                "scenarios": request.build_absolute_uri("/scenarios/scenarios/"),
+                "steps": request.build_absolute_uri("/scenarios/steps/"),
+            },
+        }
+    )
+
 
 urlpatterns = [
+    path("", api_root, name="api_root"),
     path("admin/", admin.site.urls),
-    path("", include("bots.urls")),
-    path("", include("scenarios.urls")),
+    path("api/", include("bots.urls")),
+    path("api/", include("scenarios.urls")),
 ]
