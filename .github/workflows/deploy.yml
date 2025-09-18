@@ -44,6 +44,7 @@ jobs:
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build Docker image
+      id: build-test
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -55,6 +56,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Push Docker image to GitHub Container Registry
+      id: build-push
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -63,9 +65,10 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Image digest
-      run: echo "Image pushed with digest: ${{ steps.build.outputs.digest }}"
+      run: echo "Image pushed with digest: ${{ steps.build-push.outputs.digest }}"
 
   deploy:
     name: Deploy to VPS
@@ -83,69 +86,76 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
-        port: ${{ secrets.VPS_PORT || 22 }}
-        script: |
-          echo "🚀 Starting deployment process..."
+        port: ${{ secrets.VPS_PORT || '22' }}
+        envs: REGISTRY,IMAGE_NAME,GITHUB_ACTOR,GITHUB_TOKEN,BRANCH_NAME
+      env:
+        REGISTRY: ${{ env.REGISTRY }}
+        IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH_NAME: ${{ github.ref_name }}
+      script: |
+        echo "Starting deployment process..."
 
-          # Переход в директорию проекта
-          cd /opt/api-bot-gpt || { echo "❌ Project directory not found"; exit 1; }
+        # Переход в директорию проекта
+        cd /opt/api-bot-gpt || { echo "Project directory not found"; exit 1; }
 
-          # Логин в GitHub Container Registry
-          echo "🔐 Logging into GitHub Container Registry..."
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        # Логин в GitHub Container Registry
+        echo "Logging into GitHub Container Registry..."
+        echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-          # Скачивание нового Docker образа
-          echo "📥 Pulling new Docker image..."
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} || docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        # Скачивание нового Docker образа
+        echo "Pulling new Docker image..."
+        docker pull "$REGISTRY/$IMAGE_NAME:$BRANCH_NAME" || docker pull "$REGISTRY/$IMAGE_NAME:latest"
 
-          # Обновление docker-compose файла с новым образом
-          echo "📝 Updating docker-compose configuration..."
-          sed -i 's|image: ghcr.io.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}|g' docker-compose.prod.yml || \
-          sed -i 's|image: ghcr.io.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest|g' docker-compose.prod.yml
+        # Обновление docker-compose файла с новым образом
+        echo "Updating docker-compose configuration..."
+        sed -i "s|image: ghcr.io.*|image: $REGISTRY/$IMAGE_NAME:$BRANCH_NAME|g" docker-compose.prod.yml || \
+        sed -i "s|image: ghcr.io.*|image: $REGISTRY/$IMAGE_NAME:latest|g" docker-compose.prod.yml
 
-          # Остановка старых контейнеров
-          echo "🛑 Stopping old containers..."
-          docker-compose -f docker-compose.prod.yml down || true
+        # Остановка старых контейнеров
+        echo "Stopping old containers..."
+        docker-compose -f docker-compose.prod.yml down || true
 
-          # Запуск новых контейнеров
-          echo "🚀 Starting new containers..."
-          docker-compose -f docker-compose.prod.yml up -d
+        # Запуск новых контейнеров
+        echo "Starting new containers..."
+        docker-compose -f docker-compose.prod.yml up -d
 
-          # Ожидание запуска сервисов
-          echo "⏳ Waiting for services to start..."
-          sleep 30
+        # Ожидание запуска сервисов
+        echo "Waiting for services to start..."
+        sleep 30
 
-          # Выполнение миграций базы данных
-          echo "🗄️ Running database migrations..."
-          docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
+        # Выполнение миграций базы данных
+        echo "Running database migrations..."
+        docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
 
-          # Сбор статических файлов
-          echo "📦 Collecting static files..."
-          docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+        # Сбор статических файлов
+        echo "Collecting static files..."
+        docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
 
-          # Проверка статуса сервисов
-          echo "🔍 Checking service status..."
-          docker-compose -f docker-compose.prod.yml ps
+        # Проверка статуса сервисов
+        echo "Checking service status..."
+        docker-compose -f docker-compose.prod.yml ps
 
-          # Очистка неиспользуемых Docker образов
-          echo "🧹 Cleaning up unused Docker images..."
-          docker system prune -f
+        # Очистка неиспользуемых Docker образов
+        echo "Cleaning up unused Docker images..."
+        docker system prune -f
 
-          # Проверка работоспособности приложения
-          echo "🏥 Health check..."
-          if curl -f http://localhost/admin/ > /dev/null 2>&1; then
-            echo "✅ Application is running successfully!"
-          else
-            echo "⚠️ Application might not be fully ready yet"
-          fi
+        # Проверка работоспособности приложения
+        echo "Health check..."
+        if curl -f http://localhost/admin/ > /dev/null 2>&1; then
+          echo "Application is running successfully!"
+        else
+          echo "Application might not be fully ready yet"
+        fi
 
-          echo "🎉 Deployment completed!"
+        echo "Deployment completed!"
 
     - name: Notify deployment status
       if: always()
       run: |
         if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Deployment successful!"
+          echo "Deployment successful!"
         else
-          echo "❌ Deployment failed!"
+          echo "Deployment failed!"
         fi
