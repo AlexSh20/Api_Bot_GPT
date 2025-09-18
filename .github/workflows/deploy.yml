@@ -106,23 +106,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test SSH Connection
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
-          timeout: 30s
-          script: |
-            echo "SSH connection successful!"
-            echo "Current directory: $(pwd)"
-            echo "User: $(whoami)"
-            echo "Docker version: $(docker --version)"
-            echo "Docker Compose version: $(docker-compose --version)"
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
       - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v0.1.7
         env:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
