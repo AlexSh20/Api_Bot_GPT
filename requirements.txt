@@ -29,6 +29,8 @@ django==5.2.5
     #   djangorestframework
 djangorestframework==3.16.1
     # via -r requirements.in
+gunicorn==23.0.0
+    # via -r requirements.in
 h11==0.16.0
     # via httpcore
 httpcore==1.0.9
@@ -45,6 +47,10 @@ idna==3.10
 jiter==0.10.0
     # via openai
 openai==1.102.0
+    # via -r requirements.in
+packaging==25.0
+    # via gunicorn
+psycopg2-binary==2.9.10
     # via -r requirements.in
 pydantic==2.11.7
     # via openai

@@ -7,3 +7,9 @@ python-telegram-bot>=20.0  # Telegram API
 
 # Добавляем tiktoken для подсчета токенов GPT
 tiktoken
+
+# Production server
+gunicorn>=21.0.0
+
+# Database
+psycopg2-binary>=2.9.0  # PostgreSQL adapter
