@@ -1,10 +1,11 @@
+---
 name: CI/CD Pipeline - Build and Deploy
 
-on:
+"on":
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 env:
   REGISTRY: ghcr.io
@@ -19,143 +20,155 @@ jobs:
       packages: write
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata for Docker
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
-    - name: Build Docker image
-      id: build-test
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        platforms: linux/amd64
-        push: false
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build Docker image
+        id: build-test
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Push Docker image to GitHub Container Registry
-      id: build-push
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        platforms: linux/amd64
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Push Docker image to GitHub Container Registry
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Image digest
-      run: echo "Image pushed with digest: ${{ steps.build-push.outputs.digest }}"
+      - name: Image digest
+        run: >
+          echo "Image pushed with digest:
+          ${{ steps.build-push.outputs.digest }}"
 
   deploy:
     name: Deploy to VPS
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: >
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/master'
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Deploy to VPS via SSH
-      uses: appleboy/ssh-action@v1.0.0
-      env:
-        REGISTRY: ${{ env.REGISTRY }}
-        IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        GITHUB_ACTOR: ${{ github.actor }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        BRANCH_NAME: ${{ github.ref_name }}
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        port: ${{ secrets.VPS_PORT || '22' }}
-        envs: REGISTRY,IMAGE_NAME,GITHUB_ACTOR,GITHUB_TOKEN,BRANCH_NAME
-        script: |
-          echo "Starting deployment process..."
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          envs: REGISTRY,IMAGE_NAME,GITHUB_ACTOR,GITHUB_TOKEN,BRANCH_NAME
+          script: |
+            echo "🚀 Starting deployment process..."
 
-          # Переход в директорию проекта
-          cd /opt/api-bot-gpt || { echo "Project directory not found"; exit 1; }
+            # Переход в директорию проекта
+            cd /opt/api-bot-gpt || {
+              echo "❌ Project directory not found"; exit 1;
+            }
 
-          # Логин в GitHub Container Registry
-          echo "Logging into GitHub Container Registry..."
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+            # Логин в GitHub Container Registry
+            echo "🔐 Logging into GitHub Container Registry..."
+            echo "$GITHUB_TOKEN" | docker login ghcr.io \
+              -u "$GITHUB_ACTOR" --password-stdin
 
-          # Скачивание нового Docker образа
-          echo "Pulling new Docker image..."
-          docker pull "$REGISTRY/$IMAGE_NAME:$BRANCH_NAME" || docker pull "$REGISTRY/$IMAGE_NAME:latest"
+            # Скачивание нового Docker образа
+            echo "📦 Pulling new Docker image..."
+            docker pull "$REGISTRY/$IMAGE_NAME:$BRANCH_NAME" || \
+              docker pull "$REGISTRY/$IMAGE_NAME:latest"
 
-          # Обновление docker-compose файла с новым образом
-          echo "Updating docker-compose configuration..."
-          sed -i "s|image: ghcr.io.*|image: $REGISTRY/$IMAGE_NAME:$BRANCH_NAME|g" docker-compose.prod.yml || \
-          sed -i "s|image: ghcr.io.*|image: $REGISTRY/$IMAGE_NAME:latest|g" docker-compose.prod.yml
+            # Обновление docker-compose файла с новым образом
+            echo "📝 Updating docker-compose configuration..."
+            sed -i "s|image: ghcr.io.*|image: \
+              $REGISTRY/$IMAGE_NAME:$BRANCH_NAME|g" docker-compose.prod.yml || \
+            sed -i "s|image: ghcr.io.*|image: \
+              $REGISTRY/$IMAGE_NAME:latest|g" docker-compose.prod.yml
 
-          # Остановка старых контейнеров
-          echo "Stopping old containers..."
-          docker-compose -f docker-compose.prod.yml down || true
+            # Остановка старых контейнеров
+            echo "🛑 Stopping old containers..."
+            docker-compose -f docker-compose.prod.yml down || true
 
-          # Запуск новых контейнеров
-          echo "Starting new containers..."
-          docker-compose -f docker-compose.prod.yml up -d
+            # Запуск новых контейнеров
+            echo "🚀 Starting new containers..."
+            docker-compose -f docker-compose.prod.yml up -d
 
-          # Ожидание запуска сервисов
-          echo "Waiting for services to start..."
-          sleep 30
+            # Ожидание запуска сервисов
+            echo "⏳ Waiting for services to start..."
+            sleep 30
 
-          # Выполнение миграций базы данных
-          echo "Running database migrations..."
-          docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
+            # Выполнение миграций базы данных
+            echo "🗄️ Running database migrations..."
+            docker-compose -f docker-compose.prod.yml exec -T web \
+              python manage.py migrate --noinput
 
-          # Сбор статических файлов
-          echo "Collecting static files..."
-          docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+            # Сбор статических файлов
+            echo "📁 Collecting static files..."
+            docker-compose -f docker-compose.prod.yml exec -T web \
+              python manage.py collectstatic --noinput
 
-          # Проверка статуса сервисов
-          echo "Checking service status..."
-          docker-compose -f docker-compose.prod.yml ps
+            # Проверка статуса сервисов
+            echo "📊 Checking service status..."
+            docker-compose -f docker-compose.prod.yml ps
 
-          # Очистка неиспользуемых Docker образов
-          echo "Cleaning up unused Docker images..."
-          docker system prune -f
+            # Очистка неиспользуемых Docker образов
+            echo "🧹 Cleaning up unused Docker images..."
+            docker system prune -f
 
-          # Проверка работоспособности приложения
-          echo "Health check..."
-          if curl -f http://localhost/admin/ > /dev/null 2>&1; then
-            echo "Application is running successfully!"
+            # Проверка работоспособности приложения
+            echo "🏥 Health check..."
+            if curl -f http://localhost/admin/ > /dev/null 2>&1; then
+              echo "✅ Application is running successfully!"
+            else
+              echo "⚠️ Application might not be fully ready yet"
+            fi
+
+            echo "🎉 Deployment completed!"
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
           else
-            echo "Application might not be fully ready yet"
+            echo "❌ Deployment failed!"
           fi
-
-          echo "Deployment completed!"
-
-    - name: Notify deployment status
-      if: always()
-      run: |
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "Deployment successful!"
-        else
-          echo "Deployment failed!"
-        fi
