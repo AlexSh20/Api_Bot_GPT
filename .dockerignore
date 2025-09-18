@@ -63,6 +63,10 @@ docs/
 # Docker
 Dockerfile*
 docker-compose*
+
+# Keep important scripts (do not ignore)
+!entrypoint.sh
+!healthcheck.py
 .dockerignore
 
 # Other

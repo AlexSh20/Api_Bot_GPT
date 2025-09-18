@@ -38,25 +38,34 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN groupadd -r django && useradd -r -g django django
 
 # Создаем рабочую директорию
-WORKDIR /app
-
 # Копируем код приложения
 COPY . .
 
 # Создаем директории для статических файлов и медиа
 RUN mkdir -p /app/staticfiles /app/media
 
-# Устанавливаем права доступа
-RUN chown -R django:django /app
+# Копируем и настраиваем entrypoint скрипт
+COPY entrypoint.sh /entrypoint.sh
+
+# Устанавливаем права доступа (пока еще root)
+RUN chmod +x /entrypoint.sh && \
+    chown -R django:django /app && \
+    chown django:django /entrypoint.sh
 
 # Переключаемся на непривилегированного пользователя
 USER django
 
-# Собираем статические файлы
-RUN python manage.py collectstatic --noinput --settings=ApiBotGpt.settings
+# Устанавливаем права доступа
+RUN chown -R django:django /app && chown django:django /entrypoint.sh
+
+# Переключаемся на непривилегированного пользователя
+USER django
 
 # Открываем порт
 EXPOSE 8000
+
+# Устанавливаем entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Команда по умолчанию
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "ApiBotGpt.wsgi:application"]
