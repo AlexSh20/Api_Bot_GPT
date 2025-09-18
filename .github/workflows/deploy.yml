@@ -189,7 +189,8 @@ jobs:
             echo "=========================================="
 
   # Альтернативная джоба для демонстрации (вместо реального VPS)  
-    name: Mock Deploy (Homework without VPS_)
+  mock-deploy:
+    name: Mock Deploy (Homework without VPS)
     needs: build-and-push
     runs-on: ubuntu-latest
     if: true  # deploy вместо реального
