@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ format('{0}/api-bot-gpt', toLower(github.repository_owner)) }}
+  IMAGE_NAME: alexsh20/api-bot-gpt
 
 jobs:
   build-and-push:
