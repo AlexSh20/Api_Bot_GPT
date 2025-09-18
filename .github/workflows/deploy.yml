@@ -82,10 +82,7 @@ jobs:
     needs: [build-and-push, check-secrets]
     runs-on: ubuntu-latest
     if: needs.check-secrets.outputs.has-vps == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    name:  Deploy to VPS
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    #if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
     steps:
       - name: 🔗 Deploy to VPS via SSH
