@@ -23,6 +23,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Debug - List files
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in root:"
+          ls -la
+          echo "Checking for Dockerfile:"
+          if [ -f "Dockerfile" ]; then
+            echo "✓ Dockerfile found"
+          else
+            echo "✗ Dockerfile not found"
+          fi
+          echo "Checking for requirements.txt:"
+          if [ -f "requirements.txt" ]; then
+            echo "✓ requirements.txt found"
+          else
+            echo "✗ requirements.txt not found"
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -49,9 +68,22 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: Dockerfile
           platforms: linux/amd64
           push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push Docker image to GitHub Container Registry
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

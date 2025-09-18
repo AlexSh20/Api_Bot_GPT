@@ -1,6 +1,7 @@
 # Git
 .git
 .gitignore
+.github
 
 # Python
 __pycache__
@@ -23,12 +24,6 @@ coverage.xml
 .mypy_cache
 .pytest_cache
 .hypothesis
-
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
 
 # Virtual environments
 env/
@@ -53,18 +48,28 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Docker
-.dockerignore
-docker-compose*.yml
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
 
 # Documentation
-README.md
+*.md
 docs/
 
-# CI/CD
-.github/
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
 
-# Environment files
-.env
+# Other
+*.tmp
+*.bak
+*.swp
 .env.local
+.env.development
+.env.test
 .env.production
