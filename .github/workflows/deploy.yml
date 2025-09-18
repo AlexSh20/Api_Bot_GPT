@@ -49,6 +49,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           platforms: linux/amd64
           push: false
           tags: ${{ steps.meta.outputs.tags }}
@@ -61,8 +62,33 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           platforms: linux/amd64
           push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push Docker image to GitHub Container Registry
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -100,75 +126,75 @@ jobs:
           port: ${{ secrets.VPS_PORT || '22' }}
           envs: REGISTRY,IMAGE_NAME,GITHUB_ACTOR,GITHUB_TOKEN,BRANCH_NAME
           script: |
-            echo "🚀 Starting deployment process..."
+            echo "Starting deployment process..."
 
             # Переход в директорию проекта
             cd /opt/api-bot-gpt || {
-              echo "❌ Project directory not found"; exit 1;
+              echo "Project directory not found"; exit 1;
             }
 
             # Логин в GitHub Container Registry
-            echo "🔐 Logging into GitHub Container Registry..."
+            echo "Logging into GitHub Container Registry..."
             echo "$GITHUB_TOKEN" | docker login ghcr.io \
               -u "$GITHUB_ACTOR" --password-stdin
 
             # Скачивание нового Docker образа
-            echo "📦 Pulling new Docker image..."
+            echo "Pulling new Docker image..."
             docker pull "$REGISTRY/$IMAGE_NAME:$BRANCH_NAME" || \
               docker pull "$REGISTRY/$IMAGE_NAME:latest"
 
             # Обновление docker-compose файла с новым образом
-            echo "📝 Updating docker-compose configuration..."
+            echo "Updating docker-compose configuration..."
             sed -i "s|image: ghcr.io.*|image: \
               $REGISTRY/$IMAGE_NAME:$BRANCH_NAME|g" docker-compose.prod.yml || \
             sed -i "s|image: ghcr.io.*|image: \
               $REGISTRY/$IMAGE_NAME:latest|g" docker-compose.prod.yml
 
             # Остановка старых контейнеров
-            echo "🛑 Stopping old containers..."
+            echo "Stopping old containers..."
             docker-compose -f docker-compose.prod.yml down || true
 
             # Запуск новых контейнеров
-            echo "🚀 Starting new containers..."
+            echo "Starting new containers..."
             docker-compose -f docker-compose.prod.yml up -d
 
             # Ожидание запуска сервисов
-            echo "⏳ Waiting for services to start..."
+            echo "Waiting for services to start..."
             sleep 30
 
             # Выполнение миграций базы данных
-            echo "🗄️ Running database migrations..."
+            echo "Running database migrations..."
             docker-compose -f docker-compose.prod.yml exec -T web \
               python manage.py migrate --noinput
 
             # Сбор статических файлов
-            echo "📁 Collecting static files..."
+            echo "Collecting static files..."
             docker-compose -f docker-compose.prod.yml exec -T web \
               python manage.py collectstatic --noinput
 
             # Проверка статуса сервисов
-            echo "📊 Checking service status..."
+            echo "Checking service status..."
             docker-compose -f docker-compose.prod.yml ps
 
             # Очистка неиспользуемых Docker образов
-            echo "🧹 Cleaning up unused Docker images..."
+            echo "Cleaning up unused Docker images..."
             docker system prune -f
 
             # Проверка работоспособности приложения
-            echo "🏥 Health check..."
+            echo "Health check..."
             if curl -f http://localhost/admin/ > /dev/null 2>&1; then
-              echo "✅ Application is running successfully!"
+              echo "Application is running successfully!"
             else
-              echo "⚠️ Application might not be fully ready yet"
+              echo "Application might not be fully ready yet"
             fi
 
-            echo "🎉 Deployment completed!"
+            echo "Deployment completed!"
 
       - name: Notify deployment status
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment successful!"
+            echo "Deployment successful!"
           else
-            echo "❌ Deployment failed!"
+            echo "Deployment failed!"
           fi
