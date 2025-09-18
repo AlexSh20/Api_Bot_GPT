@@ -1,0 +1,89 @@
+# On Windows use 
+python3 -m venv env
+env\Scripts\activate
+
+Установили django
+pip install django
+
+установили pip-tools
+pip install pip-tools
+
+расшифровали зависимости из requirements.in
+pip-compile
+
+установили зависимости
+pip-sync
+
+создали папку проекта
+django-admin startproject booking
+
+добавили в папку новый функционал api
+python .\manage.py startapp api
+Затем прописать его в settings -> installed_apps
+
+создали модели в файле api->models и выполнили миграции
+python manage.py makemigrations
+python manage.py migrate 
+
+#старт сервера
+python manage.py runserver
+#Старт сервера на определенном порту (порт 80)
+python manage.py 0.0.0.0:80  runserver
+
+# Создание миграций для новых моделей
+python manage.py makemigrations bots
+
+# Применение миграций
+python manage.py migrate
+
+# Создание суперпользователя (опционально)
+python manage.py createsuperuser
+
+# Обновление зависимостей
+pip-compile requirements.in
+pip install -r requirements.txt
+
+# Запуск Django сервера (терминал 1)
+python manage.py runserver
+
+# Запуск Telegram ботов (терминал 2)
+python manage.py run_telegram_bots
+
+# Запуск конкретного бота
+python manage.py run_telegram_bots --bot-id 1
+
+# Пользователь admin
+# Пароль admin123456
+
+#панель django
+python manage.py shell
+
+# зависимости 
+pip freeze > requirements.txt
+
+#создать папку users с базовой структурой
+python manage.py startapp users
+
+
+#данные для входа
+Логин   test
+Пароль  test007W
+
+#авторизация и аутентификация
+django allauth
+
+# тестирование
+# основная команда
+python -m unittest tests.test_calc
+# с подробным выводом
+python -m unittest tests.test_calc -v
+#запуск конкретного тестового класса:
+python -m unittest tests.test_calc.TestCalculator
+#запуск конкретного теста
+python -m unittest tests.test_calc.TestCalculator.test_sum_int
+
+# Запуск всех тестов в папке tests
+python -m unittest discover tests
+
+# библиотека параметризации тестов
+pip install parameterized
