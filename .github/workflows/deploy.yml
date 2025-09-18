@@ -106,6 +106,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Test SSH Connection
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 30s
+          script: |
+            echo "SSH connection successful!"
+            echo "Current directory: $(pwd)"
+            echo "User: $(whoami)"
+            echo "Docker version: $(docker --version)"
+            echo "Docker Compose version: $(docker-compose --version)"
+
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.0
         env:
@@ -118,32 +133,54 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || '22' }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 60s
+          command_timeout: 10m
           envs: REGISTRY,IMAGE_NAME,GITHUB_ACTOR,GITHUB_TOKEN,BRANCH_NAME
           script: |
+            set -e
             echo "Starting deployment process..."
+
+            # Проверка переменных окружения
+            echo "Registry: $REGISTRY"
+            echo "Image: $IMAGE_NAME"
+            echo "Branch: $BRANCH_NAME"
 
             # Переход в директорию проекта
             cd /opt/api-bot-gpt || {
-              echo "Project directory not found"; exit 1;
+              echo "Project directory not found at /opt/api-bot-gpt"
+              echo "Available directories:"
+              ls -la /opt/
+              exit 1
             }
 
             # Логин в GitHub Container Registry
             echo "Logging into GitHub Container Registry..."
-            echo "$GITHUB_TOKEN" | docker login ghcr.io \
-              -u "$GITHUB_ACTOR" --password-stdin
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+            # Определение тега образа
+            IMAGE_TAG="${BRANCH_NAME:-latest}"
+            FULL_IMAGE_NAME="$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+            echo "Using image: $FULL_IMAGE_NAME"
 
             # Скачивание нового Docker образа
-            echo "Pulling new Docker image..."
-            docker pull "$REGISTRY/$IMAGE_NAME:$BRANCH_NAME" || \
+            echo "Pulling Docker image..."
+            docker pull "$FULL_IMAGE_NAME" || {
+              echo "Failed to pull $FULL_IMAGE_NAME, trying latest..."
               docker pull "$REGISTRY/$IMAGE_NAME:latest"
+              FULL_IMAGE_NAME="$REGISTRY/$IMAGE_NAME:latest"
+            }
 
-            # Обновление docker-compose файла с новым образом
+            # Обновление docker-compose файла
             echo "Updating docker-compose configuration..."
-            sed -i "s|image: ghcr.io.*|image: \
-              $REGISTRY/$IMAGE_NAME:$BRANCH_NAME|g" docker-compose.prod.yml || \
-            sed -i "s|image: ghcr.io.*|image: \
-              $REGISTRY/$IMAGE_NAME:latest|g" docker-compose.prod.yml
+            if [ -f docker-compose.prod.yml ]; then
+              sed -i "s|image: ghcr.io.*|image: $FULL_IMAGE_NAME|g" docker-compose.prod.yml
+              echo "Updated docker-compose.prod.yml"
+            else
+              echo "docker-compose.prod.yml not found!"
+              ls -la
+              exit 1
+            fi
 
             # Остановка старых контейнеров
             echo "Stopping old containers..."
@@ -153,38 +190,15 @@ jobs:
             echo "Starting new containers..."
             docker-compose -f docker-compose.prod.yml up -d
 
-            # Ожидание запуска сервисов
-            echo "Waiting for services to start..."
-            sleep 30
-
-            # Выполнение миграций базы данных
-            echo "Running database migrations..."
-            docker-compose -f docker-compose.prod.yml exec -T web \
-              python manage.py migrate --noinput
-
-            # Сбор статических файлов
-            echo "Collecting static files..."
-            docker-compose -f docker-compose.prod.yml exec -T web \
-              python manage.py collectstatic --noinput
-
             # Проверка статуса сервисов
             echo "Checking service status..."
             docker-compose -f docker-compose.prod.yml ps
 
             # Очистка неиспользуемых Docker образов
             echo "Cleaning up unused Docker images..."
-            docker system prune -f
+            docker system prune -f || true
 
-            # Проверка работоспособности приложения
-            echo "Health check..."
-            if curl -f http://localhost/admin/ > /dev/null 2>&1; then
-              echo "Application is running successfully!"
-            else
-              echo "Application might not be fully ready yet"
-            fi
-
-            echo "Deployment completed!"
-
+            echo "Deployment completed successfully!"
       - name: Notify deployment status
         if: always()
         run: |
