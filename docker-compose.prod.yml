@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/api-bot-gpt:latest
     container_name: api-bot-gpt-web
     ports:
       - "8000:8000"

@@ -7,11 +7,11 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/api-bot-gpt
 
 jobs:
   build-and-push:
-    name: 🏗️ Build and Push Docker Image
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -91,7 +91,7 @@ jobs:
             echo ""
 
             # Скачивание нового Docker-образа
-            echo "📥 Downloading new Docker image..."
+            echo " Downloading new Docker image..."
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             echo " Image downloaded successfully"
             echo ""
@@ -99,7 +99,7 @@ jobs:
             # Переход в директорию проекта
             echo " Navigating to project directory..."
             cd /home/ubuntu/django || cd /opt/api-bot-gpt || echo "Using current directory"
-            echo "📍 Current directory: $(pwd)"
+            echo " Current directory: $(pwd)"
             echo ""
 
             # Остановка старых контейнеров
@@ -172,7 +172,7 @@ jobs:
 
   # Альтернативная джоба для демонстрации (вместо реального VPS)
   mock-deploy:
-    name: 🎭 Mock Deploy (Educational)
+    name: Mock Deploy (Educational)
     needs: build-and-push
     runs-on: ubuntu-latest
     if: true  # deploy вместо реального
