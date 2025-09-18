@@ -10,6 +10,23 @@ env:
   IMAGE_NAME: alexsh20/api-bot-gpt
 
 jobs:
+  check-secrets:
+    name: 🔍 Check VPS Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      has-vps: ${{ steps.check.outputs.has-vps }}
+    steps:
+      - name: Check VPS secrets
+        id: check
+        run: |
+          if [ -n "${{ secrets.VPS_HOST }}" ] && [ -n "${{ secrets.VPS_SSH_KEY }}" ]; then
+            echo "VPS secrets configured - will deploy to real server"
+            echo "has-vps=true" >> $GITHUB_OUTPUT
+          else
+            echo "VPS secrets not configured - will use mock deployment"
+            echo "has-vps=false" >> $GITHUB_OUTPUT
+          fi
+
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
@@ -61,6 +78,10 @@ jobs:
         run: docker logout ghcr.io
 
   deploy:
+    name: Deploy to VPS
+    needs: [build-and-push, check-secrets]
+    runs-on: ubuntu-latest
+    if: needs.check-secrets.outputs.has-vps == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     name:  Deploy to VPS
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -172,6 +193,87 @@ jobs:
 
   # Альтернативная джоба для демонстрации (вместо реального VPS)
   mock-deploy:
+    name: Mock Deploy (Homework without VPS)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: true  # deploy вместо реального
+
+    steps:
+      - name:  Educational Mock Deployment
+        run: |
+          echo "=========================================="
+          echo " MOCK DEPLOYMENT (DEMO MODE)"
+          echo "=========================================="
+          echo ""
+          echo "This simulates deployment because VPS is not configured"
+          echo "To enable real deployment, configure these GitHub Secrets:"
+          echo "   • VPS_HOST (your server IP)"
+          echo "   • VPS_SSH_KEY (private SSH key)"
+          echo "   • VPS_USERNAME (default: ubuntu)"
+          echo "   • VPS_PORT (default: 22)"
+          echo ""
+          echo "Simulating deployment steps..."
+          echo ""
+
+          echo "SSH Connection..."
+          echo "  Connected to mock-vps.example.com"
+          echo "    User: ubuntu"
+          echo "    $(date)"
+          echo ""
+
+          echo "Docker Registry Login..."
+          echo "   Logged into GitHub Container Registry"
+          echo ""
+
+          echo "Pulling Docker Image..."
+          echo "   Pulling ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "   Image downloaded successfully"
+          echo ""
+
+          echo "Stopping Old Containers..."
+          echo "   Stopping api-bot-gpt-web, api-bot-gpt-db, api-bot-gpt-nginx"
+          echo "   Old containers stopped"
+          echo ""
+
+          echo "Starting New Containers..."
+          echo "   Starting containers with new image"
+          echo "   All containers started successfully"
+          echo ""
+
+          echo "Database Migrations..."
+          echo "   Running python manage.py migrate"
+          echo "   Migrations completed"
+          echo ""
+
+          echo "Static Files Collection..."
+          echo "   Running python manage.py collectstatic"
+          echo "   Static files collected"
+          echo ""
+
+          echo "Health Check..."
+          echo "   Testing http://localhost:8000/admin/"
+          echo "   Application is healthy and responding"
+          echo ""
+
+          echo "Cleanup..."
+          echo "   Removing old Docker images"
+          echo "   Cleanup completed"
+          echo ""
+
+          echo "=========================================="
+          echo "MOCK DEPLOYMENT COMPLETED SUCCESSFULLY!"
+          echo "=========================================="
+          echo ""
+          echo "Deployment Summary:"
+          echo "   Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "   Commit: ${GITHUB_SHA:0:7}"
+          echo "   Duration: ~2 minutes"
+          echo "   URL: http://mock-vps.example.com"
+          echo ""
+          echo "Next Steps:"
+          echo "   • Configure real VPS secrets for production deployment"
+          echo "   • Test the application locally with docker-compose"
+          echo "   • Monitor application logs and performance"
     name: Mock Deploy (Educational)
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -234,6 +336,20 @@ jobs:
 
       - name: Simulate Cleanup
         run: |
+          echo "Cleaning up unused Docker images..."
+          echo "   Deleted: sha256:abc123... (old api-bot-gpt image)"
+          echo "   Deleted: sha256:def456... (unused intermediate layer)"
+          echo "   Total reclaimed space: 156MB"
+          echo "Cleanup completed"
+
+      - name: Mark mock deploy outputs (for notify-success)
+        id: set-mock-output
+        run: |
+          # Передаём понятные выходные данные, чтобы notify-success мог корректно определить результат
+          # Используем GITHUB_OUTPUT для установки outputs на уровне job (steps.<id>.outputs.*)
+          echo "deploy_result=success" >> $GITHUB_OUTPUT
+          echo "deploy_type=mock" >> $GITHUB_OUTPUT
+          echo "Mock deploy outputs set: deploy_result=success, deploy_type=mock"
           echo "Cleaning up unused Docker images..."
           echo "   Deleted: sha256:abc123... (old api-bot-gpt image)"
           echo "   Deleted: sha256:def456... (unused intermediate layer)"
