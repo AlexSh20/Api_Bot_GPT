@@ -89,19 +89,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Push Docker image to GitHub Container Registry
-        id: build-push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Image digest
         run: >
           echo "Image pushed with digest:
@@ -114,10 +101,6 @@ jobs:
     if: >
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/master'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.0
